@@ -1,1 +1,1 @@
-from .tracer import TraceFunction, Snarl
+from .snarl import Snarl
