@@ -8,15 +8,16 @@ setup(
     version = '0.1.0',
     author = 'Josh Karpel',
     author_email = 'josh.karpel@gmail.com',
-    description = '',
+    description = 'Create execution graphs of Python programs',
     long_description = open('README.md').read(),
     long_description_content_type = "text/markdown",
-    url = 'https://github.com/htcondor/htmap',
+    url = 'https://github.com/JoshKarpel/snarl',
     classifiers = [
     ],
     packages = [
         'snarl',
     ],
     install_requires = [
+        'graphviz',
     ],
 )
