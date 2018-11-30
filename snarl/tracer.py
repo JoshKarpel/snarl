@@ -22,33 +22,63 @@ class Func:
     file_name: str
     line_number: int
 
+    @classmethod
+    def from_frame(cls, frame):
+        return cls(
+            name = get_function_name(frame),
+            file_name = get_file_name(frame),
+            line_number = get_line_number(frame),
+        )
+
 
 class Tracer:
     def __init__(self, snarl):
         self.snarl = snarl
+        self.timer = snarl.timer
 
     def __call__(self, frame, event, arg):
-        if event == 'call':
-            file_name = get_file_name(frame)
-            if file_name in SNARL_FILES or file_name == '':
-                return
+        file_name = get_file_name(frame)
+        if file_name in SNARL_FILES or file_name == '':
+            return
 
-            function_name = get_function_name(frame)
-            if function_name in COMPREHENSIONS:
-                return
+        function_name = get_function_name(frame)
+        if function_name in COMPREHENSIONS:
+            return
+
+        if self.snarl.whitelist is not None and all(wl in file_name for wl in self.snarl.whitelist):
+            return
+        if self.snarl.blacklist is not None and any(bl in file_name for bl in self.snarl.blacklist):
+            return
+
+        if event == 'call':
             func = Func(
                 name = function_name,
                 file_name = file_name,
                 line_number = get_line_number(frame),
             )
 
-            parent_frame = get_parent_frame(frame)
-            if self.snarl.whitelist is not None and all(wl in file_name for wl in self.snarl.whitelist):
-                return
-            if self.snarl.blacklist is not None and any(bl in file_name for bl in self.snarl.blacklist):
-                return
-            parent_function_name = get_function_name(parent_frame)
+            parent_function_name = get_function_name(get_parent_frame(frame))
             self.snarl.was_called_by[func][parent_function_name] += 1
+
+            self.snarl.func_start_times[func] = self.timer()
+
+        elif event == 'return':
+            func = Func(
+                name = function_name,
+                file_name = file_name,
+                line_number = get_line_number(frame),
+            )
+
+            parent_func = Func.from_frame(get_parent_frame(frame))
+
+            dt = self.timer() - self.snarl.func_start_times[func]
+
+            self.snarl.total_time[func] += dt
+            self.snarl.own_time[func] += dt
+
+            self.snarl.own_time[parent_func] -= dt
+
+        return self.__call__
 
 
 def get_parent_frame(frame):
