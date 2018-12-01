@@ -5,6 +5,8 @@
 
 Snarl is a tool for creating execution graphs of Python programs.
 
+Installation: `pip install git+https://github.com/JoshKarpel/snarl.git`
+
 Here's an example:
 
 ```python
