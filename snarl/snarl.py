@@ -1,3 +1,5 @@
+from typing import Optional
+
 import collections
 import os
 import sys
@@ -37,11 +39,14 @@ class Snarl:
 
     def dot(
         self,
+        name: Optional[str] = None,
         call_counts: bool = True,
+        timing: bool = True,
+        format: str = 'png',
         dpi: int = 600,
     ):
         g = Digraph(
-            'snarl',
+            name or 'snarl',
             graph_attr = {
                 'dpi': str(dpi),
             },
@@ -53,6 +58,7 @@ class Snarl:
                 'fontname': 'Courier New',
             },
         )
+        g.format = format
 
         func_names = set(k.name for k in self.was_called_by)
 
@@ -63,13 +69,17 @@ class Snarl:
             paths = (k.file_name.replace(r'\ '[0], r'\\') for k in self.was_called_by.keys())
 
         for k, path in zip(self.was_called_by.keys(), paths):
+            label_lines = [
+                rf'{k.name}',
+                rf'{path}:{k.line_number}',
+            ]
+
+            if timing:
+                label_lines.append(rf'Total: {fmt_ns(self.total_time[k])} | Own: {fmt_ns(self.own_time[k])}')
+
             g.node(
                 k.name,
-                label = r'\n'.join((
-                    rf'{k.name}',
-                    rf'{path}:{k.line_number}',
-                    rf'Total: {fmt_ns(self.total_time[k])} | Own: {fmt_ns(self.own_time[k])}',
-                )),
+                label = r'\n'.join(label_lines),
             )
 
         for k, v in self.was_called_by.items():
